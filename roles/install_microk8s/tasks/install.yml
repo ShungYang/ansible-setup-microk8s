@@ -1,0 +1,61 @@
+---
+- name: 確認額外的相依套件已經安裝完成了, 並且 Update cache.
+  ansible.builtin.apt:
+    name:
+      - snapd
+      - fuse
+      - udev
+    state: present
+    update_cache: true
+    cache_valid_time: "{{ microk8s_cache_valid_time }}"
+  tags:
+    - microk8s
+    - microk8s.dependencies
+    - microk8s.dependencies.apt
+
+- name: Start and Enable Services.
+  ansible.builtin.service:
+    name: "{{ microk8s_service }}"
+    state: started
+    enabled: true
+  with_items:
+    - snapd
+    - udev
+  loop_control:
+    loop_var: microk8s_service
+    label: "{{ microk8s_service }}"
+  tags:
+    - microk8s
+    - microk8s.dependencies
+    - microk8s.dependencies.services
+
+# snap install microk8s --classic
+- name: Install microk8s
+  community.general.snap:
+    name: microk8s
+    classic: true
+    channel: "{{ microk8s_version }}"
+  tags:
+    - microk8s
+    - microk8s.install
+
+# 等待 microk8s 服務啟動
+- name: Wait for microk8s to be ready
+  ansible.builtin.command:
+    cmd: microk8s.status --wait-ready
+  changed_when: false
+  tags:
+    - notest
+    - microk8s
+    - microk8s.ready
+
+# snap alias microk8s.kubectl kubectl
+- name: Create kubectl alias
+  ansible.builtin.command:
+    cmd: snap alias microk8s.kubectl kubectl
+  changed_when: false
+  tags:
+    - microk8s
+    - microk8s.alias
+    - microk8s.alias.kubectl
+

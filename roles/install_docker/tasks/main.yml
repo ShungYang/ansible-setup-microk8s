@@ -1,0 +1,45 @@
+---
+# tasks file for install-docker
+- include_tasks: setup-Debian.yml
+  when: ansible_os_family == 'Debian'
+
+- name: 安裝 Docker, 安裝完後 restart docker.
+  package:
+    name: "{{ docker_package }}"
+    state: "{{ docker_package_state }}"
+  notify: restart docker
+  ignore_errors: "{{ ansible_check_mode }}"
+
+- name: 當我們有設定 Option Key-Value 時,確認 /etc/docker/ 目錄存在.
+  file:
+    path: /etc/docker
+    state: directory
+    mode: 0755
+  when: docker_daemon_options.keys() | length > 0
+
+- name: 將 Option Key-Value 寫入 /etc/docker/daemon.json, 並 restart docker.
+  copy:
+    content: "{{ docker_daemon_options | to_nice_json }}"
+    dest: /etc/docker/daemon.json
+    mode: 0644
+  when: docker_daemon_options.keys() | length > 0
+  notify: restart docker
+
+- name: Ensure Docker is started and enabled at boot.
+  service:
+    name: docker
+    state: "{{ docker_service_state }}"
+    enabled: "{{ docker_service_enabled }}"
+  ignore_errors: "{{ ansible_check_mode }}"
+
+- name: Ensure handlers are notified now to avoid firewall conflicts.
+  meta: flush_handlers
+
+# 是否要安裝 docker-compose
+- include_tasks: docker-compose.yml
+  when: docker_install_compose | bool
+
+# 是否將用戶加入 Docker group
+- include_tasks: docker-users.yml
+  when: docker_users | length > 0
+

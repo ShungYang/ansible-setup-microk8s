@@ -1,0 +1,12 @@
+---
+# defaults file for install-helm
+helm_package_state: present
+
+# Helm repo URL.
+helm_repo_url: https://baltocdn.com/helm
+
+# Used only for Debian/Ubuntu. Switch 'stable' to 'nightly' if needed.
+helm_apt_release_channel: stable
+helm_apt_repository: "deb {{ helm_repo_url }}/{{ helm_apt_release_channel }}/{{ ansible_os_family | lower }} all main"
+helm_apt_key: "{{ helm_repo_url }}/signing.asc"
+

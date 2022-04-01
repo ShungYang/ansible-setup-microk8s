@@ -1,0 +1,32 @@
+---
+# tasks file for install-helm
+- name: 確認相依套件已經安裝完成了.
+  apt:
+    name:
+      - apt-transport-https
+    state: present
+
+- name: 確認 curl 安裝於 Managed nodes (on older systems without SNI).
+  package:
+    name:
+      - curl
+    state: present
+
+- name: 新增 Helm apt key (alternative for older systems without SNI).
+  shell: >
+    curl {{ helm_apt_key }} | apt-key add -
+  args:
+    warn: false
+
+- name: 新增 Helm repository, 並 Update cache.
+  apt_repository:
+    repo: "{{ helm_apt_repository }}"
+    state: present
+    update_cache: true
+
+- name: Install Helm.
+  apt:
+    name:
+      - helm
+    state: "{{ helm_package_state }}"
+    update_cache: true

@@ -1,0 +1,8 @@
+---
+- name: 安裝 Microk8s
+  hosts: [k8s_host_installation]
+  become: yes # use sudo
+  roles:
+    - role: install_docker
+    - role: install_microk8s
+    - role: install_helm

@@ -1,0 +1,61 @@
+---
+- name: 確認套件尚未安裝於 Managed nodes.
+  package:
+    name:
+      - docker
+      - docker-engine
+    state: absent
+
+- name: 如果 /etc/apt/sources.list.d/docker.list 存在, 將其刪除.
+  file:
+    path: /etc/apt/sources.list.d/docker.list
+    state: absent
+
+- name: 確認相依套件已經安裝完成了.
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+    state: present
+
+- name: 確認額外的相依套件已經安裝完成了 (on Ubuntu < 20.04 and any other systems).
+  apt:
+    name: gnupg2
+    state: present
+  when: ansible_distribution != 'Ubuntu' or ansible_distribution_version is version('20.04', '<')
+
+- name: 確認額外的相依套件已經安裝完成了 (on Ubuntu >= 20.04).
+  apt:
+    name: gnupg
+    state: present
+  when: ansible_distribution == 'Ubuntu' or ansible_distribution_version is version('20.04', '>=')
+
+- name: 新增 Docker apt key.
+  apt_key:
+    url: "{{ docker_apt_gpg_key }}"
+    id: 9DC858229FC7DD38854AE2D88D81803C0EBFCD88
+    state: present
+  register: add_repository_key
+  ignore_errors: "{{ docker_apt_ignore_key_error }}"
+
+- name: 當新增 apt key 失敗的話, 確認 curl 安裝於 Managed nodes (on older systems without SNI).
+  package: name=curl state=present
+  when: add_repository_key is failed
+
+- name: 新增 Docker apt key (alternative for older systems without SNI).
+  shell: >
+    curl -sSL {{ docker_apt_gpg_key }} | apt-key add -
+  args:
+    warn: false
+  when: add_repository_key is failed
+
+# echo \
+#    "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
+#    $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+# apt-get update
+- name: 新增 Docker repository 並 Update cache.
+  apt_repository:
+    repo: "{{ docker_apt_repository }}"
+    state: present
+    update_cache: true
+

@@ -1,0 +1,7 @@
+[k8s_host_installation]
+MIC-DDCSMDD-K8S02-01 ansible_ssh_host=10.88.26.237
+MIC-DDCSMDD-K8S02-02 ansible_ssh_host=10.88.26.238
+
+[k8s_uat]
+
+[k8s_prod]
